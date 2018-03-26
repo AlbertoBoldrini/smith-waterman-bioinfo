@@ -5,7 +5,6 @@ import os
 import sys
 import argparse
 import smith_waterman
-from glob import iglob
 
 
 __author__  = 'Alberto Boldrini'
