@@ -146,7 +146,7 @@ if __name__ == "__main__":
                 break
             
             # Show the score for the next list of alignments
-            print ("Score:", result.matrix[pos.x][pos.y].score)
+            print ("Score:", score)
 
             # Format the alignment in a list of equivalent strings
             sw_f_list = smith_waterman.format_sw_alignment (result, pos)
