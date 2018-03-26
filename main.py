@@ -138,6 +138,13 @@ if __name__ == "__main__":
         # Print a list of string for each score
         for pos in result.best_scores:
 
+            # Fetches the score for this alignment
+            score = result.matrix[pos.x][pos.y].score
+
+            # Checks the minscore option
+            if score < args.minscore:
+                break
+            
             # Show the score for the next list of alignments
             print ("Score:", result.matrix[pos.x][pos.y].score)
 
@@ -145,6 +152,10 @@ if __name__ == "__main__":
             sw_f_list = smith_waterman.format_sw_alignment (result, pos)
 
             for sw_f in sw_f_list:
+
+                # Checks the minlength option
+                if len(sw_f.sequence1) < args.minlength:
+                    continue
                 
                 # Prints the alignment
                 print(sw_f.sequence1)
