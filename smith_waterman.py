@@ -1,11 +1,5 @@
 #!/usr/bin/env python2
 
-
-import os
-import sys
-import argparse
-from glob import iglob
-
 # Position in the Smith-Waterman matrx
 class sw_pos:
     def __init__ (self, x, y):

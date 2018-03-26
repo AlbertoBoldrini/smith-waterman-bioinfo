@@ -20,7 +20,6 @@ GAP_EXTEND_SCORE = -2
 
 
 
-
 # Parses the command line arguments of this program
 def parse_args ():
 
@@ -164,11 +163,11 @@ if __name__ == "__main__":
                 # Counts the new alignment written
                 number_alignment_written += 1
 
-                # Stops because the max number of alignments hab been reached
+                # Stops if the max number of alignments has been reached
                 if number_alignment_written >= args.numresult:
                     break
 
-            # Stops because the max number of alignments hab been reached
+            # Stops if the max number of alignments has been reached
             if number_alignment_written >= args.numresult:
                 break
     
