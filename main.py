@@ -69,7 +69,7 @@ def check_args (args):
                 for pair in sequences:
 
                     if len(pair) != 2:
-                        sys.exit('The file \'' + args.input + '\' contains one or more line not correctly formatted.\n'
+                        sys.exit('The file \'' + args.input + '\' contains one or more lines not correctly formatted.\n'
                                  'The file must be formatted in this way:\n\n'
                                  'seq1\tseq2\nseq3\tseq4\nseq5\tseq6')
 
