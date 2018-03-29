@@ -24,7 +24,7 @@ GAP_EXTEND_SCORE = -2
 def parse_args ():
 
     # Creates an object to parse the command line parameters
-    parser = argparse.ArgumentParser(description="This program apply pure smith-waterman algorithm to a list of sequences.",
+    parser = argparse.ArgumentParser(description="This program apply pure smith-waterman algorithm to a list of seqs.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Explains to the object what parameters it should expect
@@ -40,7 +40,7 @@ def parse_args ():
     parser.add_argument("-e", "--gap_extend", help="gap extend score", type=float, default=GAP_EXTEND_SCORE)
     parser.add_argument("-l", "--minlength",  help="min length accepted", type=int, default=1)
     parser.add_argument("-s", "--minscore",   help="min score accepted", type=float, default=0)
-    parser.add_argument("-n", "--numresult",  help="max alignments returned", type=int, default=10)
+    parser.add_argument("-n", "--numresult",  help="max alignments returned", type=int, default=1)
 
     # Parses and returns the object containing the params
     return parser.parse_args()
@@ -62,9 +62,9 @@ def check_args (args):
             if os.path.isfile(args.input):
                 
                 # Reads the file and splits the sequences for each line
-                sequences = [line.strip().split() for line in open(args.input)]
+                seqs = [line.strip().split() for line in open(args.input)]
 
-                for pair in sequences:
+                for pair in seqs:
 
                     if len(pair) != 2:
                         sys.exit('The file \'' + args.input + '\' contains one or more lines not correctly formatted.\n'
@@ -72,7 +72,7 @@ def check_args (args):
                                  'seq1\tseq2\nseq3\tseq4\nseq5\tseq6')
 
                 # Inserts the loaded sequences in the args structure
-                args.seqs += sequences
+                args.seqs += seqs
             
             else:
                 sys.exit('The path \'' + args.input + '\' is not a file.')
@@ -85,7 +85,7 @@ def check_args (args):
     if len(args.sequences) % 2 != 0:
         sys.exit('An odd number of sequences has been passed in the command line.')
 
-    # Pairs the sequences two by two
+    # Pairs the seqs two by two
     for i in range(len(args.sequences) >> 1):
         args.seqs.append ([args.sequences[i], args.sequences[i+1]])
 
@@ -114,11 +114,11 @@ if __name__ == "__main__":
     # Checks parameters and loads the input file
     args = check_args (args)
 
-    # Aligns each pair of sequences
+    # Aligns each pair of seqs
     for pair in args.seqs:
 
-        # Print the sequences
-        print ("Aligns of the sequences: ")
+        # Print the seqs
+        print ("Aligns of the seqs: ")
         print (pair[0])
         print (pair[1],"\n\n")
 
@@ -126,6 +126,8 @@ if __name__ == "__main__":
         result = smith_waterman.smith_waterman (pair[0], pair[1], args.match, args.mismatch,
                                                 args.gap_open, args.gap_extend)
 
+
+        # smith_waterman.print_matrix (result)
 
         # Next prints the alignments resulted
         print ("Results:")
@@ -152,12 +154,12 @@ if __name__ == "__main__":
             for sw_f in sw_f_list:
 
                 # Checks the minlength option
-                if len(sw_f.sequence1) < args.minlength:
+                if len(sw_f.seq1) < args.minlength:
                     continue
                 
                 # Prints the alignment
-                print(sw_f.sequence1)
-                print(sw_f.sequence2)
+                print(sw_f.seq1)
+                print(sw_f.seq2)
                 print("   ")
 
                 # Counts the new alignment written

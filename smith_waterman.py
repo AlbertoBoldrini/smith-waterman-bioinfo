@@ -1,6 +1,9 @@
 #!/usr/bin/env python2
 
-# Position in the Smith-Waterman matrx
+
+import sys
+
+# Position in the Smith-Waterman matrix
 class sw_pos:
     def __init__ (self, x, y):
         self.x = x
@@ -14,28 +17,18 @@ class sw_cell:
 
 # The result of the Smith-Waterman alignment
 class sw_result:
-    def __init__ (self, sequence1, sequence2, matrix, best_scores):
-        self.sequence1 = sequence1
-        self.sequence2 = sequence2
+    def __init__ (self, seq1, seq2, matrix, best_scores):
+        self.seq1 = seq1
+        self.seq2 = seq2
         self.matrix = matrix
         self.best_scores = best_scores
 
-# A formatted alignment with '-' for gaps
-class sw_formatted:
-    def __init__ (self, sequence1, sequence2):
-        self.sequence1 = sequence1
-        self.sequence2 = sequence2
-
-    def __add__ (self, other):
-        return sw_formatted (self.sequence1 + other.sequence1, self.sequence2 + other.sequence2)
-
-
 # Computes the alignment returning a sw_result object
-def smith_waterman (sequence1, sequence2, match_score, mismatch_score, gap_open_score, gap_extend_score):
+def smith_waterman (seq1, seq2, match_score, mismatch_score, gap_open_score, gap_extend_score):
 
     # The matrix has one more column ans one more row
-    w = len(sequence1) + 1 
-    h = len(sequence2) + 1
+    w = len(seq1) + 1 
+    h = len(seq2) + 1
 
     # Creates the matrix with sw_cell objects 
     m = [ [sw_cell(0) for y in range(h)] for x in range(w)] 
@@ -46,17 +39,6 @@ def smith_waterman (sequence1, sequence2, match_score, mismatch_score, gap_open_
     # For each cell compute the score
     for x in range(1,w):
         for y in range(1,h):
-
-            # Diagonal movement (the -1 in the sequence is for the extra row and column)
-            if sequence1[x-1] == sequence2[y-1]:
-                score = m[x-1][y-1].score + match_score
-            else:
-                score = m[x-1][y-1].score + mismatch_score
-
-            # Is score better then zero?
-            if score > 0:
-                m[x][y].score = score              # Sets the new maximum score
-                m[x][y].paths = [sw_pos(x-1, y-1)] # Sets the path found
 
             # Looks for possible "horizontal" gaps
             for xg in range(x):
@@ -88,85 +70,119 @@ def smith_waterman (sequence1, sequence2, match_score, mismatch_score, gap_open_
                 elif score == m[x][y].score:
                     m[x][y].paths.append (sw_pos(x, yg)) # Adds the equivalent path
             
-            # If the score is positive inserts it in the best scores list
-            if m[x][y].score > 0:
-                best_scores.append(sw_pos(x,y))
+
+            # Diagonal movement (the -1 in the seq is for the extra row and column)
+
+            # Match case
+            if seq1[x-1] == seq2[y-1]:
+
+                # Computes the score
+                score = m[x-1][y-1].score + match_score
+
+                # Is score better or equal then previous?
+                if score >= m[x][y].score:
+                    m[x][y].score = score              # Sets the new maximum score
+                    m[x][y].paths = [sw_pos(x-1, y-1)] # Sets the path found
+                    best_scores.append(sw_pos(x,y))    # It ends with a match, is a best score!
+
+            # Mismatch case
+            else:
+
+                # Computes the score
+                score = m[x-1][y-1].score + mismatch_score
+
+                # Is score better then previous?
+                if score > m[x][y].score:
+                    m[x][y].score = score           # Sets the new maximum score
+                    m[x][y].paths = [sw_pos(x-1, y-1)] # Sets the path found
+
+                # Is score equivalent?
+                elif score == m[x][y].score:
+                    m[x][y].paths.append (sw_pos(x-1, y-1)) # Adds the equivalent path            
 
     # Sorts the best_scores list using the score as key
     best_scores.sort(key=lambda p: m[p.x][p.y].score, reverse=True)
 
     # Returns the matrix and the best scores
-    return sw_result(sequence1, sequence2, m, best_scores)
+    return sw_result(seq1, seq2, m, best_scores)
 
-# Returns a list of formatted equivalent alignments that start from start_pos in the matrix
-def format_sw_alignment (result, start_pos):
+# Returns a list of formatted equivalent alignments that start from pos in the matrix
+def format_sw_alignment (result, pos): 
 
-    # Fetches the current cell
-    cell = result.matrix[start_pos.x][start_pos.y]
+    # Defines an object for the stack
+    class stack_item:
+        def __init__ (self, pos, seq1, seq2):
+            self.pos  = pos
+            self.seq1 = seq1
+            self.seq2 = seq2 
 
-    # If the cell has a negative score
-    # the null alignent is returned
-    if cell.score <= 0:
-        return [sw_formatted("", "")]   
+    # Creates a stack for all paths. Inserts the initial path
+    stack = [stack_item (pos, "", "")]
 
-    # The list of equivalent alignents that end in p1
+    # The output of this function
     output = []
 
-    # For each equivalent branch, it formats the alignment
-    for p2 in cell.paths:
+    while len(stack) > 0:
 
-        # The contribution of this subpath in the alignemnt
-        step = sw_formatted("", "")
+        # Processes the last element of the stack
+        item = stack.pop ()
 
-        # Copies start position
-        p1 = sw_pos (start_pos.x, start_pos.y)
+        # For each equivalent branch, it formats the alignment
+        for dest in result.matrix[item.pos.x][item.pos.y].paths:
 
-        # It moves from p1 to p2 adding character in the step variable
-        while p1.x > p2.x or p1.y > p2.y:
+            # Copies the stack item
+            processed = stack_item (sw_pos (item.pos.x, item.pos.y), item.seq1, item.seq2)
 
-            # Adds the character from sequence1
-            if p1.x > p2.x:
-                step.sequence1 = result.sequence1[p1.x-1] + step.sequence1
-                p1.x -= 1
+            # It moves from processed.pos to dest adding character in the seq variables
+            while processed.pos.x > dest.x or processed.pos.y > dest.y:
 
+                # Adds the character from seq1
+                if processed.pos.x > dest.x:
+                    processed.seq1 = result.seq1[processed.pos.x-1] + processed.seq1
+                    processed.pos.x -= 1
+
+                else:
+                    processed.seq1 = "-" + processed.seq1
+
+                # Adds the character from seq2
+                if processed.pos.y > dest.y:
+                    processed.seq2 = result.seq2[processed.pos.y-1] + processed.seq2
+                    processed.pos.y -= 1
+                
+                else:
+                    processed.seq2 = "-" + processed.seq2
+
+            # If the score is positive the processed item is reinserted in the stack
+            if result.matrix[processed.pos.x][processed.pos.y].score > 0:
+                stack.append(processed) 
+
+            # Otherwise is put in the output
             else:
-                step.sequence1 = "-" + step.sequence1
+                output.append(processed)
 
-            # Adds the character from sequence2
-            if p1.y > p2.y:
-                step.sequence2 = result.sequence2[p1.y-1] + step.sequence2
-                p1.y -= 1
-            
-            else:
-                step.sequence2 = "-" + step.sequence2
-
-        # For each equivalent path that starts from p2 is appended the 
-        # part of alignment of this subpath
-        output += [sw_f + step for sw_f in format_sw_alignment (result, p2)]
-
-    # Returns the list of equivalent alignents that end in p1
     return output
 
+def print_matrix (result):
 
-        
+    # The matrix has one more column ans one more row
+    w = len(result.seq1) + 1 
+    h = len(result.seq2) + 1
 
+    sys.stdout.write ("\t")
 
-# Zona test
+    # Prints the seq2
+    for x in range(1,w):
+        sys.stdout.write (result.seq1[x-1]+"\t")
+    
+    # Prints the matrix
+    for y in range(1,h):
 
-''' result = smith_waterman ("CRCCTGGGGAGTRCRG", "CAACGAGCGCAACCCT", 3, -3, -2, -2)
+        # Writes the letter for this line
+        sys.stdout.write ("\n" + result.seq2[y-1] + "\t")
 
+        # Write numbers in this line
+        for x in range(1,w):
+            sys.stdout.write (str(result.matrix[x][y].score) + "\t")
 
-
-for pos in result.best_scores:
-
-    print ("Score:", result.matrix[pos.x][pos.y].score)
-
-    sw_f_list = format_sw_alignment (result, pos)
-
-    for sw_f in sw_f_list:
-        print(sw_f.sequence1)
-        print(sw_f.sequence2)
-        print("   ")
-
-    break
- '''
+    # Closes the line
+    sys.stdout.write ("\n")
